@@ -53,8 +53,6 @@ foreach($databases as $dbname) {
 	$result = `$command`;
 }
 
-
-
 // Mask used to search for and remove old database files.
 $fileMask = "#[-_a-z0-9]+\\.([0-9]{4}-[0-9]{2}-[0-9]{2})\\.([0-9]+[apm]+)\\.sql\\.gz#i";
 
@@ -80,4 +78,3 @@ function debug($text) {
 	global $config;
 	if ($config["debug"]) echo "$text\n";
 }
-
