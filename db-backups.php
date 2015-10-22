@@ -1,22 +1,37 @@
 <?php
+/**
+ * Quick and dirty script to perform mysql dumps which are retained temporarily.
+ * See: https://github.com/patricknelson/db-backups
+ *
+ * @author	Patrick Nelson, pat@catchyour.com
+ * @since	2015-10-22
+ */
+
 
 ###################
 ## CONFIGURATION ##
 ###################
 
-// Total number of days that back-ups are kept.
-// NOTE: This goes by filename only! Ex: database.2015-10-21.7am.sql.gz
-$keepDays = 30;
+// Initialize configuration from db-config.php, starting with some sane defaults.
+// Please see db-config.example.php for more information.
+$config = [
+	"keepDays" => 30,
+	"backupDir" => __DIR__ . "/backups",
+	"timezone" => "America/New_York",
+	"debug" => true,
+];
+$configPath = __DIR__ . "/db-config.php";
+if (file_exists($configPath)) $config = array_merge($config, include($configPath));
 
-// Location to store backed-up database files (in sql.gz format).
-// NOTE: Do not include trailing slashes. Must be FULL path.
-$backupDir = __DIR__ . "/backups";
+// Setup backup directory now if it doesn't already exist.
+$backupDir = $config["backupDir"];
+if (!is_dir($backupDir)) mkdir($backupDir, 0700, true);
 
-// If messages should be output.
-define("DEBUG", true);
+// For easier-to-read string interpolation.
+$keepDays = $config["keepDays"];
 
-// Timezone setting.
-date_default_timezone_set("America/New_York");
+// Set timezone.
+date_default_timezone_set($config["timezone"]);
 
 #######################
 ## END CONFIGURATION ##
@@ -31,9 +46,9 @@ array_shift($databases);
 
 // Go through each database, dump and funnel data through gzip, saving to backup file with dated filename.
 $date = date("Y-m-d.ga");
-foreach($databases as $curdb) {
-	$file = "$backupDir/$curdb.$date.sql.gz";
-	$command = "mysqldump $curdb | gzip > $file";
+foreach($databases as $dbname) {
+	$file = "$backupDir/$dbname.$date.sql.gz";
+	$command = "mysqldump $dbname | gzip > $file";
 	debug($command);
 	$result = `$command`;
 }
@@ -51,8 +66,8 @@ $dh = opendir($backupDir);
 while (($file = readdir($dh)) !== false) {
 	if (!preg_match($fileMask, $file, $matches)) continue; // Skip file -- incorrect filename.
 	debug($file);
-	$curstamp = strtotime($matches[1]);
-	if ($curstamp < $oldStamp) {
+	$stamp = strtotime($matches[1]);
+	if ($stamp < $oldStamp) {
 		// Remove old file!
 		$filePath = "$backupDir/$file";
 		debug("Removed:  $filePath");
@@ -62,6 +77,7 @@ while (($file = readdir($dh)) !== false) {
 
 
 function debug($text) {
-	if (DEBUG) echo "$text\n";
+	global $config;
+	if ($config["debug"]) echo "$text\n";
 }
 
