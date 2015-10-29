@@ -74,6 +74,11 @@ while (($file = readdir($dh)) !== false) {
 }
 
 
+/**
+ * Console output.
+ *
+ * @param	string	$text
+ */
 function debug($text) {
 	global $config;
 	if ($config["debug"]) echo "$text\n";
